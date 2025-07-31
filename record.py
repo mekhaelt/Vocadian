@@ -10,7 +10,7 @@ def record_audio(duration_sec=10, samplerate=16000):
     sd.wait()
 
     # Save to hardcoded path
-    recordings_folder = r"C:/Users/mekha/Desktop/Projects/Vocadian/recordings"
+    recordings_folder = r"C:/Users/mekha/Desktop/Vocadian/recordings"
     os.makedirs(recordings_folder, exist_ok=True)  # Create folder if it doesn't exist
     filename = "recording.wav"
     filepath = os.path.join(recordings_folder, filename)

@@ -8,12 +8,15 @@ from scipy.fft import rfft
 from scipy.signal import butter, filtfilt
 from collections import Counter
 
-# === Thresholds for rule-based classification ===
+# === Thresholds ===
 ENERGY_THRESHOLD = 100
-PITCH_RANGE = (60, 400)      # Human pitch range in Hz
-HNR_THRESHOLD = 5            # dB threshold for harmonicity
+PITCH_RANGE = (75, 500)
+HNR_THRESHOLD = 5
+FLATNESS_THRESHOLD = 0.4
+VOICING_PROB_THRESHOLD = 0.25
+VB_RATIO_THRESHOLD = 0.6
 
-# === Bandpass Filter (used for energy computation) ===
+# === Bandpass filter ===
 def butter_bandpass_filter(data, lowcut=300, highcut=1500, sr=16000, order=4):
     nyquist = 0.5 * sr
     low = lowcut / nyquist
@@ -21,129 +24,205 @@ def butter_bandpass_filter(data, lowcut=300, highcut=1500, sr=16000, order=4):
     b, a = butter(order, [low, high], btype='band')
     return filtfilt(b, a, data)
 
-# === Audio Segmentation ===
+# === Segment audio ===
 def segment_audio(filepath, sr=16000, min_partial_sec=0.2):
-    """Split audio into 1-second non-overlapping segments."""
     y = librosa.load(filepath, sr=sr, mono=True)[0]
     segment_length = sr
     total_segments = len(y) // segment_length
-
     segments_raw = [y[i * segment_length : (i + 1) * segment_length] for i in range(total_segments)]
     remainder = y[total_segments * segment_length:]
     if len(remainder) > min_partial_sec * segment_length:
         segments_raw.append(remainder)
     return segments_raw, sr
 
-# === Extract pitch and HNR using Parselmouth ===
-def extract_pitch_and_hnr_parselmouth(raw_segment, sr=16000):
+# === Parselmouth features ===
+def extract_parselmouth_features(raw_segment, sr=16000):
     snd = parselmouth.Sound(values=raw_segment, sampling_frequency=sr)
-
-    pitch_obj = snd.to_pitch(time_step=0.01, pitch_floor=60, pitch_ceiling=400)
-    harmonicity_obj = snd.to_harmonicity_cc()
+    pitch_obj = snd.to_pitch()
+    harmonicity_obj = snd.to_harmonicity_ac()
 
     pitches = pitch_obj.selected_array['frequency']
-    voiced_pitches = pitches[pitches > 0]
-    avg_pitch = np.mean(voiced_pitches) if len(voiced_pitches) > 0 else 0
+    avg_pitch = np.mean(pitches[pitches > 0]) if np.any(pitches > 0) else 0
+    hnr = np.nanmean(harmonicity_obj.values[0])
+    voiced_frames = pitches > 0
+    voicing_prob = np.sum(voiced_frames) / len(pitches)
 
-    hnr_values = harmonicity_obj.values[0]
-    hnr_values = np.array(hnr_values)
-    hnr_values = hnr_values[~np.isnan(hnr_values)]
-    hnr_values = hnr_values[hnr_values > 0]
-    avg_hnr = np.mean(hnr_values) if len(hnr_values) > 0 else 0
+    return avg_pitch, hnr, voicing_prob
 
-    return avg_pitch, avg_hnr
+# === Frequency-based voice band ratio ===
+def voice_band_energy_ratio(fft_mag, sr):
+    freqs = np.fft.rfftfreq(len(fft_mag) * 2 - 1, d=1/sr)
+    mask = (freqs >= 300) & (freqs <= 3400)
+    return np.sum(fft_mag[mask] ** 2) / (np.sum(fft_mag ** 2) + 1e-8)
 
-# === Feature Extraction ===
+# === Feature smoothing ===
+def smooth_feature(values, window_size=3):
+    smoothed = []
+    for i in range(len(values)):
+        window = values[max(0, i - window_size//2):min(len(values), i + window_size//2 + 1)]
+        smoothed.append(np.mean(window))
+    return smoothed
+
+# === Feature extraction ===
 def extract_features(raw_segment, sr=16000):
-    """Compute energy, pitch, and HNR from segment."""
     filtered = butter_bandpass_filter(raw_segment, sr=sr)
     fft_mag = np.abs(rfft(filtered))
     total_energy = np.sum(fft_mag ** 2)
 
-    pitch, hnr = extract_pitch_and_hnr_parselmouth(raw_segment, sr)
+    raw_fft_mag = np.abs(rfft(raw_segment))
+    geometric_mean = np.exp(np.mean(np.log(raw_fft_mag + 1e-10)))
+    arithmetic_mean = np.mean(raw_fft_mag + 1e-10)
+    spectral_flatness = geometric_mean / arithmetic_mean
+
+    pitch, hnr, voicing_prob = extract_parselmouth_features(raw_segment, sr)
+    vb_ratio = voice_band_energy_ratio(fft_mag, sr)
 
     return {
         "total_energy": total_energy,
+        "spectral_flatness": spectral_flatness,
         "pitch": pitch,
-        "hnr": hnr
+        "hnr": hnr,
+        "voicing_prob": voicing_prob,
+        "voice_band_ratio": vb_ratio
     }
 
-# === Rule-Based Classification ===
+# === Classification ===
 def classify_segment(features):
     if features["total_energy"] < ENERGY_THRESHOLD:
         return "noise"
-    if features["hnr"] > HNR_THRESHOLD and PITCH_RANGE[0] <= features["pitch"] <= PITCH_RANGE[1]:
-        return "voice"
-    return "noise"
 
-# === Majority-Vote Smoothing ===
-def smooth_labels(labels, window_size=3):
-    smoothed = []
-    for i in range(len(labels)):
-        window = labels[max(0, i - window_size//2):min(len(labels), i + window_size//2 + 1)]
-        most_common = Counter(window).most_common(1)[0][0]
-        smoothed.append(most_common)
-    return smoothed
+    score = 0
 
-# === Plot Features Over Time ===
-def plot_features(times, total_energies, pitches, hnrs):
-    plt.figure(figsize=(12, 8))
+    if features["spectral_flatness"] < FLATNESS_THRESHOLD:
+        score += 2
 
-    plt.subplot(3, 1, 1)
-    plt.plot(times, total_energies, marker='o', label='Total Energy')
-    plt.axhline(ENERGY_THRESHOLD, color='r', linestyle='--', label='Energy Threshold')
-    plt.ylabel("Total Energy")
+    if PITCH_RANGE[0] <= features["pitch"] <= PITCH_RANGE[1]:
+        score += 1
+
+    if features["voicing_prob"] > VOICING_PROB_THRESHOLD:
+        score += 1
+
+    if features["voice_band_ratio"] > VB_RATIO_THRESHOLD:
+        score += 2
+
+    if features["hnr"] > HNR_THRESHOLD:
+        score += 1
+
+    return "voice" if score >= 5 else "noise"
+
+# === Plotting ===
+def plot_features(times, energies, flatnesses, pitches, hnrs, voicing_probs, vb_ratios):
+    plt.figure(figsize=(14, 16))
+
+    plt.subplot(6, 1, 1)
+    plt.plot(times, energies, marker='o', label="Smoothed Energy")
+    plt.axhline(ENERGY_THRESHOLD, color='r', linestyle='--')
+    plt.ylabel("Energy")
     plt.legend()
 
-    plt.subplot(3, 1, 2)
-    plt.plot(times, pitches, marker='o', label='Pitch (Hz)', color='g')
+    plt.subplot(6, 1, 2)
+    plt.plot(times, flatnesses, marker='o', label="Smoothed Flatness", color='c')
+    plt.axhline(FLATNESS_THRESHOLD, color='r', linestyle='--')
+    plt.ylabel("Flatness")
+    plt.legend()
+
+    plt.subplot(6, 1, 3)
+    plt.plot(times, pitches, marker='o', label="Smoothed Pitch", color='g')
     plt.axhline(PITCH_RANGE[0], color='gray', linestyle='--')
     plt.axhline(PITCH_RANGE[1], color='gray', linestyle='--')
     plt.ylabel("Pitch (Hz)")
     plt.legend()
 
-    plt.subplot(3, 1, 3)
-    plt.plot(times, hnrs, marker='o', label='HNR (dB)', color='m')
+    plt.subplot(6, 1, 4)
+    plt.plot(times, hnrs, marker='o', label="Smoothed HNR", color='m')
     plt.axhline(HNR_THRESHOLD, color='gray', linestyle='--')
     plt.ylabel("HNR (dB)")
-    plt.xlabel("Segment (sec)")
+    plt.legend()
+
+    plt.subplot(6, 1, 5)
+    plt.plot(times, voicing_probs, marker='o', label="Smoothed Voicing Prob", color='orange')
+    plt.axhline(VOICING_PROB_THRESHOLD, color='gray', linestyle='--')
+    plt.ylabel("Voicing Prob")
+    plt.legend()
+
+    plt.subplot(6, 1, 6)
+    plt.plot(times, vb_ratios, marker='o', label="Smoothed Voice Band Ratio", color='brown')
+    plt.axhline(VB_RATIO_THRESHOLD, color='gray', linestyle='--')
+    plt.ylabel("VBR")
+    plt.xlabel("Time (s)")
     plt.legend()
 
     plt.tight_layout()
     plt.show()
 
-# === Main Execution ===
+# === Export Results ===
+def export_results(labels):
+    results = [{"start_time": i, "end_time": i + 1, "label": labels[i]} for i in range(len(labels))]
+    with open("results.json", "w") as f:
+        json.dump(results, f, indent=2)
+
+# === Debug Print ===
+def print_segment_debug_info(labels, energies, flatnesses, pitches, hnrs, voicing_probs, vb_ratios):
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    RESET = "\033[0m"
+
+    print("\n=== Segment Classification Summary ===\n")
+    for i in range(len(labels)):
+        pitch_pass = GREEN if PITCH_RANGE[0] <= pitches[i] <= PITCH_RANGE[1] else RED
+        flatness_pass = GREEN if flatnesses[i] < FLATNESS_THRESHOLD else RED
+        hnr_pass = GREEN if hnrs[i] is not None and not np.isnan(hnrs[i]) and hnrs[i] > HNR_THRESHOLD else RED
+        voicing_pass = GREEN if voicing_probs[i] > VOICING_PROB_THRESHOLD else RED
+        vbr_pass = GREEN if vb_ratios[i] > VB_RATIO_THRESHOLD else RED
+        energy_pass = GREEN if energies[i] >= ENERGY_THRESHOLD else RED
+
+        print(f"Second {i}:")
+        print(f"  Label:           {labels[i].upper()}")
+        print(f"  Energy:          {energy_pass}{energies[i]:.2f}{RESET}")
+        print(f"  Flatness:        {flatness_pass}{flatnesses[i]:.3f}{RESET}")
+        print(f"  Pitch:           {pitch_pass}{pitches[i]:.1f} Hz{RESET}")
+        print(f"  HNR:             {hnr_pass}{hnrs[i]:.2f} dB{RESET}")
+        print(f"  Voicing Prob:    {voicing_pass}{voicing_probs[i]:.3f}{RESET}")
+        print(f"  Voice Band Ratio:{vbr_pass}{vb_ratios[i]:.3f}{RESET}")
+        print("-" * 40)
+
+
+# === Main ===
 if __name__ == "__main__":
     filepath = "recordings/recording.wav"
     segments_raw, sr = segment_audio(filepath)
 
-    total_energies = []
-    pitches = []
-    hnrs = []
-    raw_labels = []
-
+    energies, flatnesses, pitches, hnrs, voicing_probs, vb_ratios = [], [], [], [], [], []
     for segment in segments_raw:
         features = extract_features(segment, sr)
-        label = classify_segment(features)
-
-        total_energies.append(features["total_energy"])
+        energies.append(features["total_energy"])
+        flatnesses.append(features["spectral_flatness"])
         pitches.append(features["pitch"])
         hnrs.append(features["hnr"])
-        raw_labels.append(label)
+        voicing_probs.append(features["voicing_prob"])
+        vb_ratios.append(features["voice_band_ratio"])
 
-    smoothed_labels = smooth_labels(raw_labels, window_size=3)
+    sm_energies = smooth_feature(energies)
+    sm_flatnesses = smooth_feature(flatnesses)
+    sm_pitches = smooth_feature(pitches)
+    sm_hnrs = smooth_feature(hnrs)
+    sm_voicing_probs = smooth_feature(voicing_probs)
+    sm_vb_ratios = smooth_feature(vb_ratios)
 
-    print("Raw Labels:", raw_labels)
-    print("Smoothed Labels:", smoothed_labels)
+    smoothed_labels = []
+    for i in range(len(sm_energies)):
+        smoothed_features = {
+            "total_energy": sm_energies[i],
+            "spectral_flatness": sm_flatnesses[i],
+            "pitch": sm_pitches[i],
+            "hnr": sm_hnrs[i],
+            "voicing_prob": sm_voicing_probs[i],
+            "voice_band_ratio": sm_vb_ratios[i]
+        }
+        smoothed_labels.append(classify_segment(smoothed_features))
 
-    # === Export JSON Results ===
-    results = [
-        {"start_time": i, "end_time": i + 1, "label": smoothed_labels[i]}
-        for i in range(len(smoothed_labels))
-    ]
-    with open("results.json", "w") as f:
-        json.dump(results, f, indent=2)
+    print_segment_debug_info(smoothed_labels, sm_energies, sm_flatnesses, sm_pitches, sm_hnrs, sm_voicing_probs, sm_vb_ratios)
+    export_results(smoothed_labels)
 
-    # === Optional Visualization ===
-    times = list(range(len(segments_raw)))
-    plot_features(times, total_energies, pitches, hnrs)
+    times = list(range(len(smoothed_labels)))
+    plot_features(times, sm_energies, sm_flatnesses, sm_pitches, sm_hnrs, sm_voicing_probs, sm_vb_ratios)
