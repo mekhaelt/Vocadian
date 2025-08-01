@@ -9,6 +9,7 @@ def record_audio(duration_sec=60, samplerate=16000):
     audio = sd.rec(int(duration_sec * samplerate), samplerate=samplerate, channels=1, dtype='int16')
     sd.wait()
 
+    # Make sure to change to local path
     recordings_folder = r"C:/Users/mekha/Desktop/Vocadian/recordings"
     os.makedirs(recordings_folder, exist_ok=True)  
     filename = "recording.wav"
@@ -21,4 +22,4 @@ def record_audio(duration_sec=60, samplerate=16000):
     return filepath
 
 if __name__ == "__main__":
-    record_audio(duration_sec=10)
+    record_audio(duration_sec=60)

@@ -8,14 +8,15 @@ from scipy.fft import rfft
 from scipy.signal import butter, filtfilt
 from collections import Counter
 
-# === Thresholds ===
-ENERGY_THRESHOLD = 100
-PITCH_RANGE = (75, 500)
-FLATNESS_THRESHOLD = 0.4
-VOICING_PROB_THRESHOLD = 0.25
-VB_RATIO_THRESHOLD = -0.35
+# Thresholds 
+ENERGY_THRESHOLD = 100        # Minimum spectral energy required (filters out silence/very quiet noise)
+PITCH_RANGE = (75, 500)       # Valid fundamental frequency range for human speech (Hz)
+FLATNESS_THRESHOLD = 0.4      # Maximum spectral flatness for voice (higher = more noise-like)
+VOICING_PROB_THRESHOLD = 0.25 # Minimum voicing probability (percentage of voiced frames)
+VB_RATIO_THRESHOLD = -0.35    # Minimum log voice band energy ratio (speech frequency concentration)
 
-# === Bandpass filter ===
+
+# Bandpass filter
 def butter_bandpass_filter(data, lowcut=300, highcut=1500, sr=16000, order=4):
     nyquist = 0.5 * sr
     low = lowcut / nyquist
@@ -23,7 +24,7 @@ def butter_bandpass_filter(data, lowcut=300, highcut=1500, sr=16000, order=4):
     b, a = butter(order, [low, high], btype='band')
     return filtfilt(b, a, data)
 
-# === Segment audio ===
+# Segment audio 
 def segment_audio(filepath, sr=16000, min_partial_sec=0.2):
     y = librosa.load(filepath, sr=sr, mono=True)[0]
     segment_length = sr
@@ -34,11 +35,10 @@ def segment_audio(filepath, sr=16000, min_partial_sec=0.2):
         segments_raw.append(remainder)
     return segments_raw, sr
 
-# === Parselmouth features ===
+# Extract pitch and voicing probability 
 def extract_parselmouth_features(raw_segment, sr=16000):
     snd = parselmouth.Sound(values=raw_segment, sampling_frequency=sr)
     pitch_obj = snd.to_pitch()
-
     pitches = pitch_obj.selected_array['frequency']
     avg_pitch = np.mean(pitches[pitches > 0]) if np.any(pitches > 0) else 0
     voiced_frames = pitches > 0
@@ -46,7 +46,7 @@ def extract_parselmouth_features(raw_segment, sr=16000):
 
     return avg_pitch, voicing_prob
 
-# === Frequency-based voice band ratio ===
+# Extract voice band ratio 
 def voice_band_energy_ratio(raw_segment, sr):
     # Use raw signal for total power
     fft_raw = np.abs(rfft(raw_segment))
@@ -65,7 +65,7 @@ def voice_band_energy_ratio(raw_segment, sr):
 
 
 
-# === Feature smoothing ===
+# Feature smoothing 
 def smooth_feature(values, window_size=3):
     smoothed = []
     for i in range(len(values)):
@@ -73,19 +73,26 @@ def smooth_feature(values, window_size=3):
         smoothed.append(np.mean(window))
     return smoothed
 
-# === Feature extraction ===
+# Extracts all features at once
 def extract_features(raw_segment, sr=16000):
+    
+    # Apply bandpass filter and convert to frequency domain using FFT
     filtered = butter_bandpass_filter(raw_segment, sr=sr)
     fft_mag = np.abs(rfft(filtered))
-    total_energy = np.sum(fft_mag ** 2)
+    total_energy = np.sum(fft_mag ** 2)  
 
+    # Calculate spectral flatness
     raw_fft_mag = np.abs(rfft(raw_segment))
     geometric_mean = np.exp(np.mean(np.log(raw_fft_mag + 1e-10)))
     arithmetic_mean = np.mean(raw_fft_mag + 1e-10)
-    spectral_flatness = geometric_mean / arithmetic_mean
+    spectral_flatness = geometric_mean / arithmetic_mean  
 
+    # Extract pitch and voicing information
     pitch, voicing_prob = extract_parselmouth_features(raw_segment, sr)
+    
+    # Calculate voice band energy ratio
     vb_ratio = voice_band_energy_ratio(raw_segment, sr)
+
 
     return {
         "total_energy": total_energy,
@@ -95,7 +102,7 @@ def extract_features(raw_segment, sr=16000):
         "voice_band_ratio": vb_ratio
     }
 
-# === Classification ===
+# Classification scoring system
 def classify_segment(features):
     if features["total_energy"] < ENERGY_THRESHOLD:
         return "noise"
@@ -112,7 +119,7 @@ def classify_segment(features):
 
     return "voice" if score >= 4 else "noise"
 
-# === Plotting ===
+# Plotting features
 def plot_features(times, energies, flatnesses, pitches, voicing_probs, vb_ratios):
     plt.figure(figsize=(14, 14))
 
@@ -151,13 +158,13 @@ def plot_features(times, energies, flatnesses, pitches, voicing_probs, vb_ratios
     plt.tight_layout()
     plt.show()
 
-# === Export Results ===
+# Export results 
 def export_results(labels):
     results = [{"start_time": i, "end_time": i + 1, "label": labels[i]} for i in range(len(labels))]
     with open("results.json", "w") as f:
         json.dump(results, f, indent=2)
 
-# === Debug Print ===
+# Debug print in terminal
 def print_segment_debug_info(labels, energies, flatnesses, pitches, voicing_probs, vb_ratios):
     RED = "\033[91m"
     GREEN = "\033[92m"
@@ -180,11 +187,13 @@ def print_segment_debug_info(labels, energies, flatnesses, pitches, voicing_prob
         print(f"  Voice Band Ratio:{vbr_pass}{vb_ratios[i]:.3f}{RESET}")
         print("-" * 40)
 
-# === Main ===
+
 if __name__ == "__main__":
+    # Load and segment audio
     filepath = "recordings/recording.wav"
     segments_raw, sr = segment_audio(filepath)
 
+    # Filter, convert to frequency domain and extract features 
     energies, flatnesses, pitches, voicing_probs, vb_ratios = [], [], [], [], []
     for segment in segments_raw:
         features = extract_features(segment, sr)
@@ -194,12 +203,14 @@ if __name__ == "__main__":
         voicing_probs.append(features["voicing_prob"])
         vb_ratios.append(features["voice_band_ratio"])
 
+    # Temporally smoothe features
     sm_energies = smooth_feature(energies)
     sm_flatnesses = smooth_feature(flatnesses)
     sm_pitches = smooth_feature(pitches)
     sm_voicing_probs = smooth_feature(voicing_probs)
     sm_vb_ratios = smooth_feature(vb_ratios)
 
+    # Classify features
     smoothed_labels = []
     for i in range(len(sm_energies)):
         smoothed_features = {
@@ -211,8 +222,10 @@ if __name__ == "__main__":
         }
         smoothed_labels.append(classify_segment(smoothed_features))
 
+    # Terminal debug logs
     print_segment_debug_info(smoothed_labels, sm_energies, sm_flatnesses, sm_pitches, sm_voicing_probs, sm_vb_ratios)
     export_results(smoothed_labels)
 
+    # Plots
     times = list(range(len(smoothed_labels)))
     plot_features(times, sm_energies, sm_flatnesses, sm_pitches, sm_voicing_probs, sm_vb_ratios)
