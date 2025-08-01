@@ -55,7 +55,7 @@ Reflects the base frequency of vocal fold vibration, a strong marker of human sp
 Represents the percentage of time the signal is voiced. High voicing means more likelihood of speech being present.
 
 ### Voice Band Energy Ratio (Log Normalized)  
-Measures how much energy is present in the typical human speech range between 300 and 3400 Hz, relative to total energy. The result is log scaled to reduce sensitivity to outliers and better capture proportional differences.
+Measures how much energy is present in the typical human speech range relative to total energy. The result is log scaled to reduce sensitivity to outliers and better capture proportional differences.
 
 ---
 
