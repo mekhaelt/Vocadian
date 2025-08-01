@@ -84,6 +84,8 @@ The script outputs a structured list of labeled segments in results.json:
 
 The terminal also prints a detailed feature summary for each segment, with colored indicators showing which thresholds were met. You can additionally visualize feature trends using the time series plots for deeper analysis.
 
+
+
 ## 🚀 How to Run
 
 **Step 1: Clone the Repository**
@@ -111,9 +113,28 @@ python audioSegmentation.py
 ## 📋 Assumptions and Limitations
 
 • Input must be mono audio sampled at 16000 Hz  
-• The method is not designed for overlapping speakers or music with vocals  
 • Thresholds are empirically tuned and may require adjustment for different environments  
 • Built for interpretability and lightweight performance without any machine learning  
+
+**Music Classification**: The system may occasionally misclassify vocal music or melodic instrumental pieces as "voice." This occurs because vocal music contains speech-like characteristics (pitch, voicing, tonal structure) that overlap with the current feature set.
+
+### Future Enhancement Plans
+
+#### **Phase 1: Advanced Signal Processing Features**
+- **Harmonic-to-Noise Ratio (HNR)**: Distinguish harmonic music from speech
+- **Spectral Centroid**: Detect music's unique frequency distribution patterns  
+- **Spectral Rolloff**: Identify music's frequency characteristics
+- **Rhythm Analysis**: Detect musical beat patterns vs. speech rhythm
+
+#### **Phase 2: Multi-Class Classification**
+- **Three-Class System**: Classify as "speech," "music," or "noise"
+- **Confidence Scores**: Provide confidence levels for each classification
+- **Adaptive Thresholds**: Dynamically adjust based on audio characteristics
+
+#### **Phase 3: Context-Aware Processing**
+- **Temporal Context**: Consider adjacent segments for improved accuracy
+- **Pattern Recognition**: Identify musical vs. speech patterns over time windows
+- **Audio Fingerprinting**: Implement lightweight fingerprinting for music identification
 
 ## 📬 Contact
 Created by Mekhael Thaha
