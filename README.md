@@ -30,16 +30,13 @@ You can use a preexisting audio file or create your own using the provided `reco
 ```bash
 python record.py
 ```
+Audio is segmented into one-second chunks. If the final portion of the file is shorter than 0.2 seconds, it is discarded to avoid processing very short and unreliable segments.
 
 ---
 
 ## 🎛️ Feature Extraction
 
-Some features are extracted from the raw audio to preserve the natural structure of the signal, while others are computed after applying a fourth-order Butterworth bandpass filter to mimic the human speech range (300 to 1500 Hz).
-
-Each segment is then converted into the frequency domain using a Real Fast Fourier Transform (RFFT), which reveals how energy is distributed across frequencies. This enables the extraction of key features such as spectral energy, flatness, and voice band energy ratio.
-
-All features are smoothed using a short moving average window to reduce the impact of sudden spikes or noise fluctuations across adjacent segments. This helps stabilize the final classification and improve overall consistency.
+Some features are extracted from the raw audio to preserve the natural structure of the signal, while others are computed after applying a fourth-order Butterworth bandpass filter to mimic the human speech range (300 to 1500 Hz). Each segment is then converted into the frequency domain using a Real Fast Fourier Transform, which reveals how energy is distributed across frequencies. This enables the extraction of key features such as spectral energy, flatness, and voice band energy ratio. All features are smoothed using a short moving average window to reduce the impact of sudden spikes or noise fluctuations across adjacent segments. This helps stabilize the final classification and improve overall consistency.
 
 
 ### Total Spectral Energy
