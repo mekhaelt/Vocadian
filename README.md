@@ -66,7 +66,7 @@ If the total spectral energy is below the minimum threshold, the segment is imme
 ### Stage 2: Scoring System
 If the segment passes the energy threshold, it receives a score based on the extracted features. A segment is labeled as "voice" only if the combined score passes a configurable threshold.
 
-**Scoring rules are based on:**  
+### Scoring rules are based on:  
 • Flatness below a threshold (2 points)  
 • Valid pitch range (1 point)  
 • Sufficient voicing probability (1 point)  
