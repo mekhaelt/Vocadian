@@ -35,7 +35,7 @@ python record.py
 
 ## 🎛️ Feature Extraction
 
-Each one second segment is analyzed using the following features to identify the presence of voice:
+Some features are extracted from the raw audio to preserve the natural structure of the signal, while others are computed after applying a fourth-order Butterworth bandpass filter to mimic the human speech range (300 to 1500 Hz).
 
 **Total Spectral Energy**  
 Captures the overall power of the signal. Human speech generally carries more energy than ambient noise.
