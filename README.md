@@ -58,14 +58,19 @@ Measures how much energy is present in the typical human speech range relative t
 
 ## 🧠 Classification Logic
 
-Each segment receives a score based on the extracted features. A segment is labeled as voice only if the combined score passes a configurable threshold.
+The classification process uses a two-stage approach:
 
-Scoring rules are based on:  
-• Minimum energy  
-• Flatness below a threshold  
-• Valid pitch range  
-• Sufficient voicing probability  
-• Voice band energy ratio above threshold
+### Stage 1: Energy Check
+If the total spectral energy is below the minimum threshold, the segment is immediately classified as "noise" without further analysis.
+
+### Stage 2: Scoring System
+If the segment passes the energy threshold, it receives a score based on the extracted features. A segment is labeled as "voice" only if the combined score passes a configurable threshold.
+
+**Scoring rules are based on:**  
+• Flatness below a threshold (2 points)  
+• Valid pitch range (1 point)  
+• Sufficient voicing probability (1 point)  
+• Voice band energy ratio above threshold (2 points)
 
 Each feature contributes a weighted number of points toward the final score. Flatness and voice band ratio have greater weight (2 points each), while pitch and voicing probability contribute one point each. This helps prioritize features that most reliably distinguish voice from noise.
 
