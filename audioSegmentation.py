@@ -13,7 +13,7 @@ ENERGY_THRESHOLD = 100
 PITCH_RANGE = (75, 500)
 FLATNESS_THRESHOLD = 0.4
 VOICING_PROB_THRESHOLD = 0.25
-VB_RATIO_THRESHOLD = 0.6
+VB_RATIO_THRESHOLD = -0.35
 
 # === Bandpass filter ===
 def butter_bandpass_filter(data, lowcut=300, highcut=1500, sr=16000, order=4):
@@ -48,10 +48,21 @@ def extract_parselmouth_features(raw_segment, sr=16000):
 
 # === Frequency-based voice band ratio ===
 def voice_band_energy_ratio(raw_segment, sr):
-    fft_mag = np.abs(rfft(raw_segment))
+    # Use raw signal for total power
+    fft_raw = np.abs(rfft(raw_segment))
     freqs = np.fft.rfftfreq(len(raw_segment), d=1/sr)
-    mask = (freqs >= 300) & (freqs <= 3400)
-    return np.sum(fft_mag[mask] ** 2) / (np.sum(fft_mag ** 2) + 1e-8)
+    total_power = np.sum(fft_raw ** 2) + 1e-10
+
+    # Use bandpass-filtered signal to isolate voice band
+    filtered = butter_bandpass_filter(raw_segment)
+    fft_filtered = np.abs(rfft(filtered))
+    voice_band_power = np.sum(fft_filtered ** 2) + 1e-10
+
+    # Log-ratio for robustness
+    log_vbr = np.log10(voice_band_power) - np.log10(total_power)
+
+    return log_vbr
+
 
 
 # === Feature smoothing ===
@@ -74,7 +85,7 @@ def extract_features(raw_segment, sr=16000):
     spectral_flatness = geometric_mean / arithmetic_mean
 
     pitch, voicing_prob = extract_parselmouth_features(raw_segment, sr)
-    vb_ratio = voice_band_energy_ratio(fft_mag, sr)
+    vb_ratio = voice_band_energy_ratio(raw_segment, sr)
 
     return {
         "total_energy": total_energy,
@@ -205,4 +216,3 @@ if __name__ == "__main__":
 
     times = list(range(len(smoothed_labels)))
     plot_features(times, sm_energies, sm_flatnesses, sm_pitches, sm_voicing_probs, sm_vb_ratios)
-    plt.plot(freqs, fft_mag)
