@@ -82,7 +82,7 @@ The script outputs a structured list of labeled segments in results.json:
 ]
 ```
 
-The terminal also prints a detailed feature summary for each segment with colored indicators showing which thresholds were met and you can visualize feature trends using the time series plots for deeper analysis.
+The terminal also prints a detailed feature summary for each segment, with colored indicators showing which thresholds were met. You can additionally visualize feature trends using the time series plots for deeper analysis.
 
 ## 🚀 How to Run
 
