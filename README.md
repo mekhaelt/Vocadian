@@ -58,14 +58,19 @@ Measures how much energy is present in the typical human speech range relative t
 
 ## 🧠 Classification Logic
 
-Each segment receives a score based on the extracted features. A segment is labeled as voice only if the combined score passes a configurable threshold.
+The classification process uses a two-stage approach:
 
-Scoring rules are based on:  
-• Minimum energy  
-• Flatness below a threshold  
-• Valid pitch range  
-• Sufficient voicing probability  
-• Voice band energy ratio above threshold
+### Stage 1: Energy Check
+If the total spectral energy is below the minimum threshold, the segment is immediately classified as "noise" without further analysis.
+
+### Stage 2: Scoring System
+If the segment passes the energy threshold, it receives a score based on the extracted features. A segment is labeled as "voice" only if the combined score passes a configurable threshold.
+
+### Scoring rules are based on:  
+• Flatness below a threshold (2 points)  
+• Valid pitch range (1 point)  
+• Sufficient voicing probability (1 point)  
+• Voice band energy ratio above threshold (2 points)
 
 Each feature contributes a weighted number of points toward the final score. Flatness and voice band ratio have greater weight (2 points each), while pitch and voicing probability contribute one point each. This helps prioritize features that most reliably distinguish voice from noise.
 
@@ -100,7 +105,7 @@ pip install -r requirements.txt
 ```
 
 **Step 3: Add Your Audio File**
-Place your audio file inside the recordings folder. Example:
+Place your audio file inside the recordings folder, or record your own using `record.py`. Example:
 
 ```bash
 recordings/recording.wav
@@ -113,7 +118,11 @@ python audioSegmentation.py
 ## 📋 Assumptions and Limitations
 
 • Input must be mono audio sampled at 16000 Hz  
+<<<<<<< HEAD
 • Thresholds are empirically tuned and may require adjustment for different environments  
+=======
+• Since humming maintains human pitch it can be classsified as voice, music is still classified as noise  
+>>>>>>> cf1f5641e707d4a9114cae2fa3d009fc657eed95
 • Built for interpretability and lightweight performance without any machine learning  
 
 **Music Classification**: The system may occasionally misclassify vocal music or melodic instrumental pieces as "voice." This occurs because vocal music contains speech-like characteristics (pitch, voicing, tonal structure) that overlap with the current feature set.
