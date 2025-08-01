@@ -6,16 +6,16 @@ This repository contains a lightweight Python script that segments a one minute 
 
 ## 📌 Overview
 
-**Goal:**  
+### Goal:
 Classify one second audio segments as voice or noise using frequency domain analysis and interpretable rules.
 
-**Key Features**  
-• Log normalized voice band energy ratio  
-• Spectral energy  
-• Spectral flatness  
-• Fundamental pitch estimation using Parselmouth  
-• Voicing probability
-
+### Signal Processing Pipeline
+1. **Audio Segmentation**: Raw audio is divided into 1-second non-overlapping segments
+2. **Bandpass Filtering**: 4th-order Butterworth filter (300-1500 Hz) isolates speech frequencies
+3. **Frequency Domain Analysis**: Real FFT converts time-domain signals to frequency domain
+4. **Feature Extraction**: Compute spectral energy, flatness, pitch, voicing probability, and voice band ratio
+5. **Feature Smoothing**: Moving average window (size=3) reduces temporal noise
+6. **Rule-Based Classification**: Weighted scoring system with configurable thresholds
 ---
 
 ## 📂 Input
