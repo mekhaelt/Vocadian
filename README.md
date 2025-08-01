@@ -12,7 +12,7 @@ Classify one second audio segments as voice or noise using frequency domain anal
 ### Signal Processing Pipeline
 1. **Audio Segmentation**: Raw audio is divided into 1-second non-overlapping segments
 2. **Bandpass Filtering**: 4th-order Butterworth filter (300-1500 Hz) isolates speech frequencies
-3. **Frequency Domain Analysis**: Real FFT converts time-domain signals to frequency domain
+3. **Frequency Domain Analysis**: RFFT converts time-domain signals to frequency domain
 4. **Feature Extraction**: Compute spectral energy, flatness, pitch, voicing probability, and voice band ratio
 5. **Feature Smoothing**: Moving average window (size=3) reduces temporal noise
 6. **Rule-Based Classification**: Weighted scoring system with configurable thresholds
@@ -25,7 +25,7 @@ The script takes a mono WAV audio file approximately one minute long that contai
 • Clear human speech  
 • Background noise including crowds, keyboard typing, fans, or ambient hum
 
-You can use a preexisting audio file or create your own using the provided `record.py` script:
+You can use a preexisting audio file or create your own using the provided `record.py` script (If using record.py make sure you change the local path to save the recording):
 
 ```bash
 python record.py
@@ -107,6 +107,7 @@ pip install -r requirements.txt
 ```
 
 **Step 3: Add Your Audio File**
+
 Place your audio file inside the recordings folder, or record your own using `record.py`. Example:
 
 ```bash
@@ -125,15 +126,15 @@ python audioSegmentation.py
 
 **Music Classification**: The system may occasionally misclassify vocal music or melodic instrumental pieces as "voice." This occurs because vocal music contains speech-like characteristics (pitch, voicing, tonal structure) that overlap with the current feature set.
 
-### Future Enhancement Plans
+## Potential Improvements
 
-#### **Phase 1: Advanced Signal Processing Features**
+#### Advanced Signal Processing Features
 - **Harmonic-to-Noise Ratio (HNR)**: Distinguish harmonic music from speech
 - **Spectral Centroid**: Detect music's unique frequency distribution patterns  
 - **Spectral Rolloff**: Identify music's frequency characteristics
 - **Rhythm Analysis**: Detect musical beat patterns vs. speech rhythm
 
-#### **Phase 2: Multi-Class Classification**
+#### Multi-Class Classification
 - **Three-Class System**: Classify as "speech," "music," or "noise"
 - **Confidence Scores**: Provide confidence levels for each classification
 - **Adaptive Thresholds**: Dynamically adjust thresholds based on audio characteristics
