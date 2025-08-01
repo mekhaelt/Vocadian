@@ -64,15 +64,6 @@ def voice_band_energy_ratio(raw_segment, sr):
     return log_vbr
 
 
-
-# Feature smoothing 
-def smooth_feature(values, window_size=3):
-    smoothed = []
-    for i in range(len(values)):
-        window = values[max(0, i - window_size//2):min(len(values), i + window_size//2 + 1)]
-        smoothed.append(np.mean(window))
-    return smoothed
-
 # Extracts all features at once
 def extract_features(raw_segment, sr=16000):
     
@@ -102,11 +93,22 @@ def extract_features(raw_segment, sr=16000):
         "voice_band_ratio": vb_ratio
     }
 
+# Feature smoothing 
+def smooth_feature(values, window_size=3):
+    smoothed = []
+    for i in range(len(values)):
+        window = values[max(0, i - window_size//2):min(len(values), i + window_size//2 + 1)]
+        smoothed.append(np.mean(window))
+    return smoothed
+
 # Classification scoring system
 def classify_segment(features):
+
+    # Stage 1: Immediate noise classification for low-energy segments
     if features["total_energy"] < ENERGY_THRESHOLD:
         return "noise"
 
+    # Stage 2: Calculate weighted score based on other features
     score = 0
     if features["spectral_flatness"] < FLATNESS_THRESHOLD:
         score += 2
@@ -203,7 +205,7 @@ if __name__ == "__main__":
         voicing_probs.append(features["voicing_prob"])
         vb_ratios.append(features["voice_band_ratio"])
 
-    # Temporally smoothe features
+    # Temporally smooth features
     sm_energies = smooth_feature(energies)
     sm_flatnesses = smooth_feature(flatnesses)
     sm_pitches = smooth_feature(pitches)
