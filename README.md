@@ -124,7 +124,7 @@ python audioSegmentation.py
 • Thresholds are empirically tuned and may require adjustment for different environments  
 • Built for interpretability and lightweight performance without any machine learning  
 
-**Music Classification**: The system may occasionally misclassify vocal music or melodic instrumental pieces as "voice." This occurs because vocal music contains speech-like characteristics (pitch, voicing, tonal structure) that overlap with the current feature set.
+**Music Classification**: The system may occasionally misclassify vocal music or melodic instrumental pieces as "voice." This occurs because vocal music contains speech-like characteristics (pitch, voicing, tonal structure) that overlap with the current feature set. Conversely, music with prominent beats or instrumental backing may be classified as "noise" due to high spectral flatness, low voicing probability, and poor voice band energy concentration, even when vocals are present.
 
 ## Potential Improvements
 
