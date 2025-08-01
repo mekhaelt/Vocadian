@@ -2,8 +2,6 @@
 
 This repository contains a lightweight Python script that segments a one minute audio file into one second intervals and classifies each as either human voice or non speech noise using a fully rule based system with no machine learning.
 
-This project simulates a lightweight audio pre processor suitable for filtering scientific voice data or embedded voice logs.
-
 ---
 
 ## 📌 Overview
