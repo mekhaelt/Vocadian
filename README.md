@@ -98,7 +98,7 @@ pip install -r requirements.txt
 ```
 
 **Step 3: Add Your Audio File**
-Place your audio file inside the recordings folder. Example:
+Place your audio file inside the recordings folder, or record your own using `record.py`. Example:
 
 ```bash
 recordings/recording.wav
@@ -111,8 +111,7 @@ python audioSegmentation.py
 ## 📋 Assumptions and Limitations
 
 • Input must be mono audio sampled at 16000 Hz  
-• The method is not designed for overlapping speakers or music with vocals  
-• Thresholds are empirically tuned and may require adjustment for different environments  
+• Since humming maintains human pitch it can be classsified as voice, music is still classified as noise  
 • Built for interpretability and lightweight performance without any machine learning  
 
 ## 📬 Contact
