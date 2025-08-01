@@ -73,7 +73,7 @@ Each feature contributes a weighted number of points toward the final score. Fla
 
 ## 🧪 Output
 
-The script outputs a structured list of labeled segments in in results.json:
+The script outputs a structured list of labeled segments in results.json:
 
 ```json
 [
