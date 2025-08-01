@@ -37,21 +37,24 @@ python record.py
 
 Some features are extracted from the raw audio to preserve the natural structure of the signal, while others are computed after applying a fourth-order Butterworth bandpass filter to mimic the human speech range (300 to 1500 Hz).
 
+Each segment is then converted into the frequency domain using a Real Fast Fourier Transform (RFFT), which reveals how energy is distributed across frequencies. This enables the extraction of key features such as spectral energy, flatness, and voice band energy ratio.
+
 All features are smoothed using a short moving average window to reduce the impact of sudden spikes or noise fluctuations across adjacent segments. This helps stabilize the final classification and improve overall consistency.
 
-**Total Spectral Energy**  
+
+### Total Spectral Energy
 Captures the overall power of the signal. Human speech generally carries more energy than ambient noise.
 
-**Spectral Flatness**  
+### Spectral Flatness 
 Indicates how noise like the signal is. High flatness suggests white noise or static, while low flatness indicates more tonal structure as seen in speech.
 
-**Fundamental Pitch (F₀)**  
+### Fundamental Pitch
 Reflects the base frequency of vocal fold vibration, a strong marker of human speech.
 
-**Voicing Probability**  
+### Voicing Probability  
 Represents the percentage of time the signal is voiced. High voicing means more likelihood of speech being present.
 
-**Voice Band Energy Ratio (Log Normalized)**  
+### Voice Band Energy Ratio (Log Normalized)  
 Measures how much energy is present in the typical human speech range between 300 and 3400 Hz, relative to total energy. The result is log scaled to reduce sensitivity to outliers and better capture proportional differences.
 
 ---
