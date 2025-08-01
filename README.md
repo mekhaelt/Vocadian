@@ -1,4 +1,4 @@
-# 🎧 Rule Based Voice vs Noise Detection
+# Rule Based Voice vs Noise Detection
 
 This repository contains a lightweight Python script that segments a one minute audio file into one second intervals and classifies each as either human voice or non speech noise using a fully rule based system with no machine learning.
 
