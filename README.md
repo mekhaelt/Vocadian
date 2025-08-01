@@ -89,7 +89,9 @@ The script outputs a structured list of labeled segments in results.json:
 
 The terminal also prints a detailed feature summary for each segment, with colored indicators showing which thresholds were met. You can additionally visualize feature trends using the time series plots for deeper analysis.
 
-<img src="https://github.com/mekhaelt/Vocadian/blob/main/gallery/feature_plot.png" width="385px" align="center">
+<p align="center">
+<img src="https://github.com/mekhaelt/Vocadian/blob/main/gallery/feature_plot.png" width="1000px" align="center">
+</p>
 
 ## How to Run
 
