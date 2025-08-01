@@ -4,7 +4,7 @@ This repository contains a lightweight Python script that segments a one minute 
 
 ---
 
-## 📌 Overview
+## Overview
 
 ### Goal:
 Classify one second audio segments as voice or noise using frequency domain analysis and interpretable rules.
@@ -18,7 +18,7 @@ Classify one second audio segments as voice or noise using frequency domain anal
 6. **Rule-Based Classification**: Weighted scoring system with configurable thresholds
 ---
 
-## 📂 Input
+## Input
 
 The script takes a mono WAV audio file approximately one minute long that contains a mix of:
 
@@ -34,7 +34,7 @@ Audio is segmented into one-second chunks. If the final portion of the file is s
 
 ---
 
-## 🎛️ Feature Extraction
+## Feature Extraction
 
 Some features are extracted from the raw audio to preserve the natural structure of the signal, while others are computed after applying a fourth-order Butterworth bandpass filter to mimic the human speech range (300 to 1500 Hz). Each segment is then converted into the frequency domain using a Real Fast Fourier Transform, which reveals how energy is distributed across frequencies. This enables the extraction of key features such as spectral energy, flatness, and voice band energy ratio. All features are smoothed using a short moving average window to reduce the impact of sudden spikes or noise fluctuations across adjacent segments. This helps stabilize the final classification and improve overall consistency.
 
@@ -56,7 +56,7 @@ Measures how much energy is present in the typical human speech range relative t
 
 ---
 
-## 🧠 Classification Logic
+## Classification Logic
 
 The classification process uses a two-stage approach:
 
@@ -76,7 +76,7 @@ Each feature contributes a weighted number of points toward the final score. Fla
 
 ---
 
-## 🧪 Output
+## Output
 
 The script outputs a structured list of labeled segments in results.json:
 
@@ -89,9 +89,9 @@ The script outputs a structured list of labeled segments in results.json:
 
 The terminal also prints a detailed feature summary for each segment, with colored indicators showing which thresholds were met. You can additionally visualize feature trends using the time series plots for deeper analysis.
 
+<img src="https://github.com/mekhaelt/Vocadian/blob/main/gallery/feature_plot.png" width="385px" align="center">
 
-
-## 🚀 How to Run
+## How to Run
 
 **Step 1: Clone the Repository**
 ```bash
@@ -115,14 +115,10 @@ recordings/recording.wav
 ```bash
 python audioSegmentation.py
 ```
-## 📋 Assumptions and Limitations
+##  Assumptions and Limitations
 
 • Input must be mono audio sampled at 16000 Hz  
-<<<<<<< HEAD
 • Thresholds are empirically tuned and may require adjustment for different environments  
-=======
-• Since humming maintains human pitch it can be classsified as voice, music is still classified as noise  
->>>>>>> cf1f5641e707d4a9114cae2fa3d009fc657eed95
 • Built for interpretability and lightweight performance without any machine learning  
 
 **Music Classification**: The system may occasionally misclassify vocal music or melodic instrumental pieces as "voice." This occurs because vocal music contains speech-like characteristics (pitch, voicing, tonal structure) that overlap with the current feature set.
@@ -138,12 +134,8 @@ python audioSegmentation.py
 #### **Phase 2: Multi-Class Classification**
 - **Three-Class System**: Classify as "speech," "music," or "noise"
 - **Confidence Scores**: Provide confidence levels for each classification
-- **Adaptive Thresholds**: Dynamically adjust based on audio characteristics
+- **Adaptive Thresholds**: Dynamically adjust thresholds based on audio characteristics
 
-#### **Phase 3: Context-Aware Processing**
-- **Temporal Context**: Consider adjacent segments for improved accuracy
-- **Pattern Recognition**: Identify musical vs. speech patterns over time windows
-- **Audio Fingerprinting**: Implement lightweight fingerprinting for music identification
 
 ## 📬 Contact
 Created by Mekhael Thaha
