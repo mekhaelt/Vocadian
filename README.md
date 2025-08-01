@@ -27,6 +27,12 @@ The script takes a mono WAV audio file approximately one minute long that contai
 • Clear human speech  
 • Background noise including crowds, keyboard typing, fans, or ambient hum
 
+You can use a preexisting audio file or create your own using the provided `record.py` script:
+
+```bash
+python record.py
+```
+
 ---
 
 ## 🎛️ Feature Extraction
@@ -74,3 +80,40 @@ The script outputs a structured list of labeled segments in JSON format:
   {"start_time": 0, "end_time": 1, "label": "voice"},
   {"start_time": 1, "end_time": 2, "label": "noise"}
 ]
+```
+
+The terminal also prints a detailed feature summary for each segment with colored indicators showing which thresholds were met and you can visualize feature trends using the time series plots for deeper analysis.
+
+## 🚀 How to Run
+
+**Step 1: Clone the Repository**
+```bash
+git clone https://github.com/your-username/vad-rule-based.git
+cd vad-rule-based
+```
+**Step 2: Install Python Dependencies**
+
+```bash
+pip install -r requirements.txt
+```
+
+**Step 3: Add Your Audio File**
+Place your audio file inside the recordings folder. Example:
+
+```bash
+recordings/recording.wav
+```
+**Step 4: Run the Script**
+
+```bash
+python audioSegmentation.py
+```
+## 📋 Assumptions and Limitations
+
+• Input must be mono audio sampled at 16000 Hz  
+• The method is not designed for overlapping speakers or music with vocals  
+• Thresholds are empirically tuned and may require adjustment for different environments  
+• Built for interpretability and lightweight performance without any machine learning  
+
+## 📬 Contact
+Created by Mekhael Thaha
