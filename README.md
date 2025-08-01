@@ -37,6 +37,8 @@ python record.py
 
 Some features are extracted from the raw audio to preserve the natural structure of the signal, while others are computed after applying a fourth-order Butterworth bandpass filter to mimic the human speech range (300 to 1500 Hz).
 
+All features are smoothed using a short moving average window to reduce the impact of sudden spikes or noise fluctuations across adjacent segments. This helps stabilize the final classification and improve overall consistency.
+
 **Total Spectral Energy**  
 Captures the overall power of the signal. Human speech generally carries more energy than ambient noise.
 
@@ -65,7 +67,7 @@ Scoring rules are based on:
 • Sufficient voicing probability  
 • Voice band energy ratio above threshold
 
-These rules are tuned for real world recordings.
+Each feature contributes a weighted number of points toward the final score. Flatness and voice band ratio have greater weight (2 points each), while pitch and voicing probability contribute one point each. This helps prioritize features that most reliably distinguish voice from noise.
 
 ---
 
