@@ -78,7 +78,7 @@ Each feature contributes a weighted number of points toward the final score. Fla
 
 ## Output
 
-The script outputs a structured list of labeled segments in results.json:
+The script outputs a structured list of labeled segments inside the results folder:
 
 ```json
 [
@@ -92,6 +92,38 @@ The terminal also prints a detailed feature summary for each segment, with color
 <p align="center">
 <img src="https://github.com/mekhaelt/Vocadian/blob/main/gallery/feature_plot.png" width="1000px" align="center">
 </p>
+
+## Conclusion
+
+
+### Dataset
+The model was evaluated using the **Valentini Noisy Dataset** from Kaggle, which contains both clean and noisy speech recordings:
+- **Dataset Link**: [Valentini Noisy Dataset](https://www.kaggle.com/datasets/muhmagdy/valentini-noisy/data)
+- **Dataset Type**: Speech recordings with varying noise levels
+
+### Performance Metrics
+
+| Dataset Type | Accuracy |
+|-------------|----------|
+| **Clean Dataset** | **95.3%** |
+| **Noisy Dataset** | **94.7%** |
+
+
+
+### Important Context on Accuracy Interpretation
+
+**Dataset Limitation**: The Valentini dataset contains only voiced speech under different noisy conditions, but **lacks ground truth labels** for individual segments. The model segments audio into one-second intervals and classifies each as either voice or noise.
+
+**Accuracy Analysis**:
+- **Reported Accuracy**: ~95% (assuming entire audio is voiced)
+- **Likely Higher True Accuracy**: Some "noise" predictions may actually be correct for:
+  - Brief speech pauses
+  - Non-speech portions between words
+  - Silent segments within the audio
+
+**Challenge**: Without labeled ground truth data, it's difficult to determine whether "noise" classifications are truly incorrect or accurately identify legitimate non-speech segments.
+
+---
 
 ## How to Run
 

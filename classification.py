@@ -189,45 +189,80 @@ def print_segment_debug_info(labels, energies, flatnesses, pitches, voicing_prob
         print(f"  Voice Band Ratio:{vbr_pass}{vb_ratios[i]:.3f}{RESET}")
         print("-" * 40)
 
-
 if __name__ == "__main__":
-    # Load and segment audio
-    filepath = "recordings/recording.wav"
-    segments_raw, sr = segment_audio(filepath)
+    # Loop through all .wav files in the recordings folder
+    recordings_dir = "recordings/clean_testset_wav"
+    wav_files = [f for f in os.listdir(recordings_dir) if f.endswith(".wav")]
 
-    # Filter, convert to frequency domain and extract features 
-    energies, flatnesses, pitches, voicing_probs, vb_ratios = [], [], [], [], []
-    for segment in segments_raw:
-        features = extract_features(segment, sr)
-        energies.append(features["total_energy"])
-        flatnesses.append(features["spectral_flatness"])
-        pitches.append(features["pitch"])
-        voicing_probs.append(features["voicing_prob"])
-        vb_ratios.append(features["voice_band_ratio"])
+    if not wav_files:
+        print("No .wav files found in recordings/")
+        exit()
 
-    # Temporally smooth features
-    sm_energies = smooth_feature(energies)
-    sm_flatnesses = smooth_feature(flatnesses)
-    sm_pitches = smooth_feature(pitches)
-    sm_voicing_probs = smooth_feature(voicing_probs)
-    sm_vb_ratios = smooth_feature(vb_ratios)
+    total_voice_segments = 0
+    total_noise_segments = 0
 
-    # Classify features
-    smoothed_labels = []
-    for i in range(len(sm_energies)):
-        smoothed_features = {
-            "total_energy": sm_energies[i],
-            "spectral_flatness": sm_flatnesses[i],
-            "pitch": sm_pitches[i],
-            "voicing_prob": sm_voicing_probs[i],
-            "voice_band_ratio": sm_vb_ratios[i]
-        }
-        smoothed_labels.append(classify_segment(smoothed_features))
+    for filename in wav_files:
+        filepath = os.path.join(recordings_dir, filename)
+        print(f"\nProcessing: {filename}")
 
-    # Terminal debug logs
-    print_segment_debug_info(smoothed_labels, sm_energies, sm_flatnesses, sm_pitches, sm_voicing_probs, sm_vb_ratios)
-    export_results(smoothed_labels)
+        # Load and segment audio
+        segments_raw, sr = segment_audio(filepath)
 
-    # Plots
-    times = list(range(len(smoothed_labels)))
-    plot_features(times, sm_energies, sm_flatnesses, sm_pitches, sm_voicing_probs, sm_vb_ratios)
+        # Filter, convert to frequency domain and extract features 
+        energies, flatnesses, pitches, voicing_probs, vb_ratios = [], [], [], [], []
+        for segment in segments_raw:
+            features = extract_features(segment, sr)
+            energies.append(features["total_energy"])
+            flatnesses.append(features["spectral_flatness"])
+            pitches.append(features["pitch"])
+            voicing_probs.append(features["voicing_prob"])
+            vb_ratios.append(features["voice_band_ratio"])
+
+        # Temporally smooth features
+        sm_energies = smooth_feature(energies)
+        sm_flatnesses = smooth_feature(flatnesses)
+        sm_pitches = smooth_feature(pitches)
+        sm_voicing_probs = smooth_feature(voicing_probs)
+        sm_vb_ratios = smooth_feature(vb_ratios)
+
+        # Classify features
+        smoothed_labels = []
+        for i in range(len(sm_energies)):
+            smoothed_features = {
+                "total_energy": sm_energies[i],
+                "spectral_flatness": sm_flatnesses[i],
+                "pitch": sm_pitches[i],
+                "voicing_prob": sm_voicing_probs[i],
+                "voice_band_ratio": sm_vb_ratios[i]
+            }
+            label = classify_segment(smoothed_features)
+            smoothed_labels.append(label)
+
+            # Count labels
+            if label == "voice":
+                total_voice_segments += 1
+            else:
+                total_noise_segments += 1
+
+        # Terminal debug logs
+        # print_segment_debug_info(smoothed_labels, sm_energies, sm_flatnesses, sm_pitches, sm_voicing_probs, sm_vb_ratios)
+
+        # Export results per file
+        base_name = os.path.splitext(filename)[0]
+        out_json = os.path.join("results", f"results_{base_name}.json")
+        results = [{"start_time": i, "end_time": i + 1, "label": smoothed_labels[i]} for i in range(len(smoothed_labels))]
+        with open(out_json, "w") as f:
+            json.dump(results, f, indent=2)
+        print(f"Results exported to {out_json}")
+
+        # Plots
+        # times = list(range(len(smoothed_labels)))
+        # plt.figure(figsize=(14, 14))
+        # plt.suptitle(f"Features for {filename}", fontsize=16)
+        # plot_features(times, sm_energies, sm_flatnesses, sm_pitches, sm_voicing_probs, sm_vb_ratios)
+
+    # Final summary
+    print("\n=== GLOBAL SUMMARY ===")
+    print(f"Total voice segments: {total_voice_segments}")
+    print(f"Total noise segments: {total_noise_segments}")
+    print(f"Total segments: {total_voice_segments + total_noise_segments}")
