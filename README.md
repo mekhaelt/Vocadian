@@ -107,7 +107,7 @@ The model was evaluated using a custom dataset combining the [Valentini Noisy Da
 | **Noise Data** | **75.4%** |
 
 
-The model performed well in recognizing positive voice examples but showed lower performance with accurately identifying negative noise samples. Upon reviewing the dataset, it became clear that many audio clips misclassified as voice, such as human laughter, sneezing, or animal sounds like a rooster crowing, shared speech-like characteristics. In contrast, non-human noises such as helicopters, pouring water, or crackling fire were correctly identified as noise.
+The model performed well in recognizing voice examples but showed lower performance with accurately identifying noise samples. Upon reviewing the dataset, it became clear that many audio clips misclassified as voice, such as human laughter, sneezing, or animal sounds like a rooster crowing, shared speech-like characteristics. In contrast, non-human noises such as helicopters, pouring water, or crackling fire were correctly identified as noise.
 
 This discrepancy was largely due to a misinterpretation of the task. I initially assumed that any discernible and interpretable voice-like sound should be classified as "voice." However, after discussing with the Vocadian team post-submission, I realized that even if an audio clip is clear or voice-like, it should still be labeled as "noise" if it does not represent intentional human speech.
 
