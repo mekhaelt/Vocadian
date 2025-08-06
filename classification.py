@@ -117,7 +117,7 @@ def classify_segment(features):
     if features["voicing_prob"] > VOICING_PROB_THRESHOLD:
         score += 1
     if features["voice_band_ratio"] > VB_RATIO_THRESHOLD:
-        score += 2
+        score += 1
 
     return "voice" if score >= 4 else "noise"
 
@@ -190,25 +190,24 @@ def print_segment_debug_info(labels, energies, flatnesses, pitches, voicing_prob
         print("-" * 40)
 
 if __name__ == "__main__":
-    # Loop through all .wav files in the recordings folder
-    recordings_dir = "recordings/clean_testset_wav"
+    recordings_dir = "recordings/noisy_testset_wav"
     wav_files = [f for f in os.listdir(recordings_dir) if f.endswith(".wav")]
 
     if not wav_files:
         print("No .wav files found in recordings/")
         exit()
 
-    total_voice_segments = 0
-    total_noise_segments = 0
+    file_voice_count = 0
+    file_noise_count = 0
 
     for filename in wav_files:
         filepath = os.path.join(recordings_dir, filename)
         print(f"\nProcessing: {filename}")
 
-        # Load and segment audio
+        # Segment audio
         segments_raw, sr = segment_audio(filepath)
 
-        # Filter, convert to frequency domain and extract features 
+        # Feature extraction
         energies, flatnesses, pitches, voicing_probs, vb_ratios = [], [], [], [], []
         for segment in segments_raw:
             features = extract_features(segment, sr)
@@ -218,15 +217,15 @@ if __name__ == "__main__":
             voicing_probs.append(features["voicing_prob"])
             vb_ratios.append(features["voice_band_ratio"])
 
-        # Temporally smooth features
+        # Smooth features
         sm_energies = smooth_feature(energies)
         sm_flatnesses = smooth_feature(flatnesses)
         sm_pitches = smooth_feature(pitches)
         sm_voicing_probs = smooth_feature(voicing_probs)
         sm_vb_ratios = smooth_feature(vb_ratios)
 
-        # Classify features
-        smoothed_labels = []
+        # Segment-level classification
+        segment_labels = []
         for i in range(len(sm_energies)):
             smoothed_features = {
                 "total_energy": sm_energies[i],
@@ -236,33 +235,29 @@ if __name__ == "__main__":
                 "voice_band_ratio": sm_vb_ratios[i]
             }
             label = classify_segment(smoothed_features)
-            smoothed_labels.append(label)
+            segment_labels.append(label)
 
-            # Count labels
-            if label == "voice":
-                total_voice_segments += 1
-            else:
-                total_noise_segments += 1
+        # Majority vote to classify full file
+        label_counts = Counter(segment_labels)
+        majority_label = label_counts.most_common(1)[0][0]
 
-        # Terminal debug logs
-        # print_segment_debug_info(smoothed_labels, sm_energies, sm_flatnesses, sm_pitches, sm_voicing_probs, sm_vb_ratios)
+        if majority_label == "voice":
+            file_voice_count += 1
+        else:
+            file_noise_count += 1
 
-        # Export results per file
+        print(f"  → File classification: {majority_label.upper()} ({label_counts['voice']} voice, {label_counts['noise']} noise)")
+
+        # Optionally export individual segment results
         base_name = os.path.splitext(filename)[0]
         out_json = os.path.join("results", f"results_{base_name}.json")
-        results = [{"start_time": i, "end_time": i + 1, "label": smoothed_labels[i]} for i in range(len(smoothed_labels))]
+        results = [{"start_time": i, "end_time": i + 1, "label": segment_labels[i]} for i in range(len(segment_labels))]
         with open(out_json, "w") as f:
             json.dump(results, f, indent=2)
-        print(f"Results exported to {out_json}")
+        print(f"  → Segment results exported to {out_json}")
 
-        # Plots
-        # times = list(range(len(smoothed_labels)))
-        # plt.figure(figsize=(14, 14))
-        # plt.suptitle(f"Features for {filename}", fontsize=16)
-        # plot_features(times, sm_energies, sm_flatnesses, sm_pitches, sm_voicing_probs, sm_vb_ratios)
-
-    # Final summary
-    print("\n=== GLOBAL SUMMARY ===")
-    print(f"Total voice segments: {total_voice_segments}")
-    print(f"Total noise segments: {total_noise_segments}")
-    print(f"Total segments: {total_voice_segments + total_noise_segments}")
+    # Final file-level summary
+    print("\n=== FILE-LEVEL MAJORITY VOTE SUMMARY ===")
+    print(f"Total files classified as VOICE: {file_voice_count}")
+    print(f"Total files classified as NOISE: {file_noise_count}")
+    print(f"Total files processed: {file_voice_count + file_noise_count}")

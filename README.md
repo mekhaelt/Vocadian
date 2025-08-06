@@ -70,9 +70,9 @@ If the segment passes the energy threshold, it receives a score based on the ext
 • Flatness below a threshold (2 points)  
 • Valid pitch range (1 point)  
 • Sufficient voicing probability (1 point)  
-• Voice band energy ratio above threshold (2 points)
+• Voice band energy ratio above threshold (1 points)
 
-Each feature contributes a weighted number of points toward the final score. Flatness and voice band ratio have greater weight (2 points each), while pitch and voicing probability contribute one point each. This helps prioritize features that most reliably distinguish voice from noise.
+Each feature contributes a weighted number of points toward the final score. Flatness (2 points), while pitch, voicing probability, and voice band ratio contribute one point each. This helps prioritize features that most reliably distinguish voice from noise.
 
 ---
 
@@ -97,33 +97,20 @@ The terminal also prints a detailed feature summary for each segment, with color
 
 
 ### Dataset
-The model was evaluated using the **Valentini Noisy Dataset** from Kaggle, which contains both clean and noisy speech recordings:
-- **Dataset Link**: [Valentini Noisy Dataset](https://www.kaggle.com/datasets/muhmagdy/valentini-noisy/data)
-- **Dataset Type**: Speech recordings with varying noise levels
+The model was evaluated using a custom dataset combining the [Valentini Noisy Dataset](https://www.kaggle.com/datasets/muhmagdy/valentini-noisy/data) and [Audio Noise Dataset](https://www.kaggle.com/datasets/minsithu/audio-noise-dataset)
 
 ### Performance Metrics
 
-| Dataset Type | Accuracy |
+| Data Type | Accuracy |
 |-------------|----------|
-| **Clean Dataset** | **95.3%** |
-| **Noisy Dataset** | **94.7%** |
+| **Voice Data** | **95.6%** |
+| **Noise Data** | **75.4%** |
 
 
+The model performed well in recognizing positive voice examples but showed lower performance with accurately identifying negative noise samples. Upon reviewing the dataset, it became clear that many audio clips misclassified as voice, such as human laughter, sneezing, or animal sounds like a rooster crowing, shared speech-like characteristics. In contrast, non-human noises such as helicopters, pouring water, or crackling fire were correctly identified as noise.
 
-### Important Context on Accuracy Interpretation
+This discrepancy was largely due to a misinterpretation of the task. I initially assumed that any discernible and interpretable voice-like sound should be classified as "voice." However, after discussing with the Vocadian team post-submission, I realized that even if an audio clip is clear or voice-like, it should still be labeled as "noise" if it does not represent intentional human speech.
 
-**Dataset Limitation**: The Valentini dataset contains only voiced speech under different noisy conditions, but **lacks ground truth labels** for individual segments. The model segments audio into one-second intervals and classifies each as either voice or noise.
-
-**Accuracy Analysis**:
-- **Reported Accuracy**: ~95% (assuming entire audio is voiced)
-- **Likely Higher True Accuracy**: Some "noise" predictions may actually be correct for:
-  - Brief speech pauses
-  - Non-speech portions between words
-  - Silent segments within the audio
-
-**Challenge**: Without labeled ground truth data, it's difficult to determine whether "noise" classifications are truly incorrect or accurately identify legitimate non-speech segments.
-
----
 
 ## How to Run
 
